@@ -1,5 +1,6 @@
 package com.wayze.app.wayze
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -56,6 +57,20 @@ class MainActivity : FlutterActivity() {
                         val thermalStatus = getDeviceThermalStatus()
                         result.success(thermalStatus)
                     }
+                    "getDeviceInfo" -> {
+                        val info = getDeviceInfo()
+                        result.success(info)
+                    }
+                    "setDelegate" -> {
+                        val delegate = call.argument<String>("delegate") ?: "CPU (XNNPACK)"
+                        yoloInference?.setDelegate(delegate)
+                        result.success(true)
+                    }
+                    "setInputSize" -> {
+                        val size = call.argument<Int>("inputSize") ?: 320
+                        yoloInference?.setInputSize(size)
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -107,8 +122,9 @@ class MainActivity : FlutterActivity() {
             context = this,
             lifecycleOwner = this,
             inference = yoloInference!!
-        ) { detections, latencyMs, frameQuality ->
+        ) { detections, infMs, prepMs, frameQuality ->
             runOnUiThread {
+                val totalMs = infMs + prepMs
                 val mappedList = detections.map { d ->
                     mapOf(
                         "label" to d.label,
@@ -117,7 +133,9 @@ class MainActivity : FlutterActivity() {
                         "boxArea" to d.boxArea.toDouble(),
                         "bottomY" to d.bottomY.toDouble(),
                         "timestamp" to d.timestamp,
-                        "latencyMs" to latencyMs,
+                        "latencyMs" to totalMs,
+                        "inferenceMs" to infMs,
+                        "prepMs" to prepMs,
                         "x1" to d.x1.toDouble(),
                         "y1" to d.y1.toDouble(),
                         "x2" to d.x2.toDouble(),
@@ -126,6 +144,8 @@ class MainActivity : FlutterActivity() {
                 }
                 val payload = mapOf(
                     "detections" to mappedList,
+                    "inferenceMs" to infMs,
+                    "prepMs" to prepMs,
                     "quality" to mapOf(
                         "meanLuminance" to frameQuality.meanLuminance.toDouble(),
                         "varianceLuminance" to frameQuality.varianceLuminance.toDouble(),
@@ -145,6 +165,37 @@ class MainActivity : FlutterActivity() {
         cameraXManager = null
         yoloInference?.close()
         yoloInference = null
+    }
+
+    private fun getDeviceInfo(): Map<String, Any> {
+        val actManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val memInfo = ActivityManager.MemoryInfo()
+        actManager?.getMemoryInfo(memInfo)
+
+        val isEmulator = Build.FINGERPRINT.startsWith("generic")
+            || Build.FINGERPRINT.startsWith("unknown")
+            || Build.MODEL.contains("google_sdk")
+            || Build.MODEL.contains("Emulator")
+            || Build.MODEL.contains("Android SDK built for x86")
+            || Build.MANUFACTURER.contains("Genymotion")
+            || Build.HARDWARE.contains("goldfish")
+            || Build.HARDWARE.contains("ranchu")
+            || (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
+            || "google_sdk" == Build.PRODUCT
+
+        val soc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            Build.SOC_MODEL
+        } else {
+            Build.HARDWARE
+        }
+
+        return mapOf(
+            "model" to "${Build.MANUFACTURER} ${Build.MODEL}",
+            "osVersion" to "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
+            "totalRamBytes" to memInfo.totalMem,
+            "soc" to soc,
+            "isEmulator" to isEmulator
+        )
     }
 
     private fun getDeviceThermalStatus(): Int {

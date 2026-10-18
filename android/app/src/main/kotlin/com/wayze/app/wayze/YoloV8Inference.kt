@@ -28,7 +28,9 @@ class YoloV8Inference(
     numThreads: Int = 2
 ) {
     private var interpreter: Interpreter? = null
-    private val inputSize = 320
+    private var inputSize = 320
+    private var activeDelegate = "CPU (XNNPACK)"
+    private var activeThreads = numThreads
     private val hfovDegrees = 65.0f
 
     // Standard indoor navigation & hazard classes
@@ -56,18 +58,27 @@ class YoloV8Inference(
     private fun initializeInterpreter(threads: Int) {
         val options = Interpreter.Options().apply {
             setNumThreads(threads)
-            // Use XNNPACK delegate for optimal INT8 acceleration on ARM Cortex CPUs
-            setUseXNNPACK(true)
+            when (activeDelegate) {
+                "NNAPI (Fallback)" -> setUseNNAPI(true)
+                "GPU Delegate" -> {
+                    // INT8 models on mobile CPU/GPU fallback gracefully
+                    setUseXNNPACK(true)
+                }
+                else -> setUseXNNPACK(true)
+            }
         }
 
         val candidates = if (modelPath != null) {
             listOf(modelPath)
         } else {
-            listOf(
-                "models/wayze_v1.tflite",
-                "models/wayze.tflite",
-                "models/yolov8n_int8_320.tflite"
-            )
+            when (inputSize) {
+                416 -> listOf("models/wayze_v1_416.tflite", "models/wayze_v1.tflite", "models/wayze.tflite")
+                else -> listOf(
+                    "models/wayze_v1.tflite",
+                    "models/wayze.tflite",
+                    "models/yolov8n_int8_320.tflite"
+                )
+            }
         }
 
         for (candidate in candidates) {
@@ -92,8 +103,21 @@ class YoloV8Inference(
     }
 
     fun updateThreadCount(newThreads: Int) {
+        activeThreads = newThreads
         interpreter?.close()
         initializeInterpreter(newThreads)
+    }
+
+    fun setDelegate(delegate: String) {
+        activeDelegate = delegate
+        interpreter?.close()
+        initializeInterpreter(activeThreads)
+    }
+
+    fun setInputSize(size: Int) {
+        inputSize = size
+        interpreter?.close()
+        initializeInterpreter(activeThreads)
     }
 
     /**

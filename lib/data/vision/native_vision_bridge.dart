@@ -3,6 +3,20 @@ import 'package:flutter/services.dart';
 import '../../domain/models/spatial_zone.dart';
 import '../../domain/safety/camera_health_monitor.dart';
 
+class VisionFrameTiming {
+  final int inferenceMs;
+  final int prepMs;
+  final int totalLatencyMs;
+  final int timestamp;
+
+  const VisionFrameTiming({
+    required this.inferenceMs,
+    required this.prepMs,
+    required this.totalLatencyMs,
+    required this.timestamp,
+  });
+}
+
 class VisionDetection {
   final String label;
   final double confidence;
@@ -11,6 +25,8 @@ class VisionDetection {
   final double bottomY;
   final int timestamp;
   final int latencyMs;
+  final int inferenceMs;
+  final int prepMs;
   final double x1;
   final double y1;
   final double x2;
@@ -24,6 +40,8 @@ class VisionDetection {
     required this.bottomY,
     required this.timestamp,
     this.latencyMs = 0,
+    this.inferenceMs = 0,
+    this.prepMs = 0,
     this.x1 = 0.0,
     this.y1 = 0.0,
     this.x2 = 0.0,
@@ -36,6 +54,10 @@ class VisionDetection {
         ? SpatialZone.left
         : (zoneString == 'right' ? SpatialZone.right : SpatialZone.center);
 
+    final latency = (map['latencyMs'] as num?)?.toInt() ?? 0;
+    final inf = (map['inferenceMs'] as num?)?.toInt() ?? latency;
+    final prep = (map['prepMs'] as num?)?.toInt() ?? 0;
+
     return VisionDetection(
       label: map['label'] as String? ?? 'obstacle',
       confidence: (map['confidence'] as num?)?.toDouble() ?? 0.0,
@@ -43,7 +65,9 @@ class VisionDetection {
       boxArea: (map['boxArea'] as num?)?.toDouble() ?? 0.0,
       bottomY: (map['bottomY'] as num?)?.toDouble() ?? 0.0,
       timestamp: (map['timestamp'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
-      latencyMs: (map['latencyMs'] as num?)?.toInt() ?? 0,
+      latencyMs: latency,
+      inferenceMs: inf,
+      prepMs: prep,
       x1: (map['x1'] as num?)?.toDouble() ?? 0.0,
       y1: (map['y1'] as num?)?.toDouble() ?? 0.0,
       x2: (map['x2'] as num?)?.toDouble() ?? 0.0,
@@ -59,9 +83,12 @@ abstract class VisionBridge {
   Future<bool> stopVision();
   Future<void> setStationary(bool isStationary);
   Future<int> getThermalStatus();
+  Future<bool> setDelegate(String delegate) async => true;
+  Future<bool> setInputSize(int size) async => true;
   Stream<List<VisionDetection>> get visionStream;
   Stream<String> get hardwareKeyStream;
   Stream<CameraFrameHealth> get cameraHealthStream => const Stream.empty();
+  Stream<VisionFrameTiming> get timingStream => const Stream.empty();
 }
 
 class NativeVisionBridge implements VisionBridge {
@@ -134,6 +161,29 @@ class NativeVisionBridge implements VisionBridge {
       return 0;
     }
   }
+
+  @override
+  Future<bool> setDelegate(String delegate) async {
+    try {
+      final res = await _serviceChannel.invokeMethod<bool>('setDelegate', {'delegate': delegate});
+      return res ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setInputSize(int size) async {
+    try {
+      final res = await _serviceChannel.invokeMethod<bool>('setInputSize', {'inputSize': size});
+      return res ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Stream<VisionFrameTiming> get timingStream => const Stream.empty();
 
   @override
   Stream<List<VisionDetection>> get visionStream {

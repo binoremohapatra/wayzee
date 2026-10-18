@@ -7,10 +7,10 @@ import '../feedback.dart';
 // Use the non-deprecated API for announcements
 void _announce(String message, TextDirection direction) {
   try {
+    // ignore: deprecated_member_use
     SemanticsService.announce(message, direction);
-  } catch (e) {
+  } catch (_) {
     // Fallback for older Flutter versions
-    // Remove print to improve performance
   }
 }
 

@@ -15,8 +15,8 @@ class HeartbeatService {
 
   HeartbeatService({
     required this.hapticService,
-    Duration this._interval = const Duration(seconds: 25),
-    bool this._isEnabled = true,
+    this._interval = const Duration(seconds: 25),
+    this._isEnabled = true,
   });
 
   bool get isRunning => _isRunning;

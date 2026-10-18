@@ -46,6 +46,12 @@ class MockVisionBridge implements VisionBridge {
   Future<int> getThermalStatus() async => mockThermalStatus;
 
   @override
+  Future<bool> setDelegate(String delegate) async => true;
+
+  @override
+  Future<bool> setInputSize(int size) async => true;
+
+  @override
   Stream<String> get hardwareKeyStream => const Stream.empty();
 
   @override
@@ -53,6 +59,9 @@ class MockVisionBridge implements VisionBridge {
 
   @override
   Stream<CameraFrameHealth> get cameraHealthStream => const Stream.empty();
+
+  @override
+  Stream<VisionFrameTiming> get timingStream => const Stream.empty();
 }
 
 void main() {

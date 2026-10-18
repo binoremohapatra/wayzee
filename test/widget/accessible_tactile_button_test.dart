@@ -64,7 +64,9 @@ void main() {
       final data = semantics.getSemanticsData();
       expect(data.label, equals('Emergency Stop'));
       expect(data.hint, equals('Double tap to halt guidance immediately'));
+      // ignore: deprecated_member_use
       expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+      // ignore: deprecated_member_use
       expect(data.hasFlag(SemanticsFlag.isEnabled), isTrue);
       expect(data.hasAction(SemanticsAction.tap), isTrue);
 

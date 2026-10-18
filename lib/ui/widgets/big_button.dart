@@ -51,6 +51,7 @@ class _BigButtonState extends State<BigButton> {
         duration: const Duration(milliseconds: 100),
         child: InkWell(
           onTap: _fire,
+          onHighlightChanged: (h) => setState(() => _down = h),
           borderRadius: BorderRadius.circular(20),
           child: Container(
             constraints: const BoxConstraints(minHeight: 72),

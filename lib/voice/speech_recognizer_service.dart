@@ -55,19 +55,13 @@ class FakeRecognizer implements SpeechRecognizerService {
 
   FakeRecognizer({
     List<RecognitionResult>? scriptedResults,
-    bool simulateLowConfidence = false,
-    bool simulateSilence = false,
-    bool simulateError = false,
-    RecognitionError? errorType,
-    Duration? resultDelay,
-    bool immediate = false,
-  })  : _scriptedResults = scriptedResults ?? [],
-        _simulateLowConfidence = simulateLowConfidence,
-        _simulateSilence = simulateSilence,
-        _simulateError = simulateError,
-        _errorType = errorType,
-        _resultDelay = resultDelay,
-        _immediate = immediate;
+    this._simulateLowConfidence = false,
+    this._simulateSilence = false,
+    this._simulateError = false,
+    this._errorType,
+    this._resultDelay,
+    this._immediate = false,
+  })  : _scriptedResults = scriptedResults ?? [];
 
   @override
   Future<void> initialize() async {

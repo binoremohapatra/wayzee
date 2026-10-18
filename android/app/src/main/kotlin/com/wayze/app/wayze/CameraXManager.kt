@@ -25,7 +25,7 @@ class CameraXManager(
     private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
     private val inference: YoloV8Inference,
-    private val onDetectionsReady: (List<DetectionResult>, Long, FrameQuality) -> Unit
+    private val onDetectionsReady: (List<DetectionResult>, Long, Long, FrameQuality) -> Unit
 ) {
     private val backgroundExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var imageAnalysis: ImageAnalysis? = null
@@ -89,16 +89,17 @@ class CameraXManager(
         lastInferenceTimeMs = currentTime
 
         try {
-            val startTime = System.currentTimeMillis()
-
+            val prepStart = System.currentTimeMillis()
             // Preprocess YUV to RGB Letterbox into preallocated inputBuffer
             val frameQuality = preprocessYuvToLetterbox(imageProxy, inputBuffer)
+            val prepMs = System.currentTimeMillis() - prepStart
 
             // Execute INT8 inference
+            val infStart = System.currentTimeMillis()
             val results = inference.processFrame(inputBuffer)
-            val elapsedMs = System.currentTimeMillis() - startTime
+            val infMs = System.currentTimeMillis() - infStart
 
-            onDetectionsReady(results, elapsedMs, frameQuality)
+            onDetectionsReady(results, infMs, prepMs, frameQuality)
         } catch (_: Exception) {
         } finally {
             // Frame is strictly processed in RAM and closed immediately. Never stored.

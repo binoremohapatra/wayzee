@@ -92,7 +92,8 @@ class ExitSafeModeEvent extends WayzeEvent {
 /// Deterministic, production state machine for Wayze.
 /// Every state has a recovery path; errors are spoken to the user, never silent.
 class AppStateMachine {
-  final TtsService _ttsService;
+  final TtsService ttsService;
+  TtsService get _ttsService => ttsService;
   final StreamController<WayzeState> _stateController =
       StreamController<WayzeState>.broadcast();
 
@@ -100,7 +101,7 @@ class AppStateMachine {
   WayzeState _stateBeforeAlert = WayzeState.idle;
   String? _lastErrorMessage;
 
-  AppStateMachine({required TtsService ttsService}) : _ttsService = ttsService;
+  AppStateMachine({required this.ttsService});
 
   WayzeState get currentState => _currentState;
   String? get lastErrorMessage => _lastErrorMessage;

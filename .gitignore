@@ -54,4 +54,5 @@ runs/
 pretrained_files/
 *.tar.gz
 yolov8n.pt
-
+test_output/
+emulator_screen.png

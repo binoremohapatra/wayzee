@@ -47,19 +47,16 @@ class VoiceSession {
   final void Function()? onListModeSelected;
 
   VoiceSession({
-    required SpeechCenter speechCenter,
-    required SpeechRecognizerService recognizer,
-    required String language,
+    required this._speechCenter,
+    required this._recognizer,
+    required this._language,
     required List<String> availablePlaces,
     Map<String, List<String>>? aliases,
     PlaceResolver? placeResolver,
     Clock? clock,
     this.onIntentMatched,
     this.onListModeSelected,
-  })  : _speechCenter = speechCenter,
-        _recognizer = recognizer,
-        _language = language,
-        _availablePlaces = availablePlaces,
+  })  : _availablePlaces = availablePlaces,
         _placeResolver = placeResolver ??
             PlaceResolver(
               knownPlaces: availablePlaces,

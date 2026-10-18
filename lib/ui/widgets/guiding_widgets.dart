@@ -71,7 +71,7 @@ class InstructionBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
         liveRegion: true,
-        label: distance == null ? instruction : '$instruction. ${distance} steps',
+        label: distance == null ? instruction : '$instruction. $distance steps',
         excludeSemantics: true,
         child: Column(children: [
           Text(instruction, textAlign: TextAlign.center, style: WT.hero),
@@ -81,7 +81,7 @@ class InstructionBlock extends StatelessWidget {
           ],
           if (distance != null) ...[
             const SizedBox(height: 8),
-            Text('${distance} steps', textAlign: TextAlign.center, style: WT.headline.copyWith(color: WC.muted, fontWeight: FontWeight.w500)),
+            Text('$distance steps', textAlign: TextAlign.center, style: WT.headline.copyWith(color: WC.muted, fontWeight: FontWeight.w500)),
           ],
         ]),
       );
@@ -124,12 +124,12 @@ class _DangerBannerState extends State<DangerBanner> with SingleTickerProviderSt
       excludeSemantics: true,
       child: AnimatedBuilder(
         animation: _c,
-        builder: (_, __) => Container(
+        builder: (context, child) => Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: WC.card,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: WC.bad.withOpacity(0.45 + 0.55 * _c.value), width: 4),
+            border: Border.all(color: WC.bad.withValues(alpha: 0.45 + 0.55 * _c.value), width: 4),
           ),
           child: Row(children: [
             const Icon(Icons.warning_rounded, color: WC.bad, size: 34),
