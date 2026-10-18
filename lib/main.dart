@@ -18,6 +18,8 @@ import 'ui/screens/fall_detected_screen.dart';
 import 'ui/screens/learn_the_signals_screen.dart';
 import 'ui/screens/demo_simulation_screen.dart';
 import 'ui/screens/about_model_info_screen.dart';
+import 'ui/screens/debug_screen.dart';
+import 'app/providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -155,6 +157,12 @@ class WayzeApp extends StatelessWidget {
         '/learn_signals': (context) => const LearnTheSignalsScreen(),
         '/demo': (context) => const DemoSimulationScreen(),
         '/about_model': (context) => const AboutModelInfoScreen(),
+        '/debug': (context) => Consumer(
+              builder: (ctx, ref, _) => DebugScreen(
+                mockCaneSource: ref.watch(mockCaneSourceProvider),
+                visionMetrics: ref.watch(visionMetricsProvider),
+              ),
+            ),
       },
       ),
     );

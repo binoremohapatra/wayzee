@@ -37,18 +37,30 @@ class AlertItem {
 
   AlertItem({
     required this.id,
-    required this.text,
+    String? text,
+    String? speechText,
     required this.priority,
-    required this.classification,
+    String? classification,
+    String? label,
     this.zone,
-    this.distanceCm,
+    double? distanceCm,
+    double? distanceMeters,
     DateTime? createdAt,
+    DateTime? timestamp,
     Duration? timeout,
-  })  : createdAt = createdAt ?? DateTime.now(),
+  })  : text = text ?? speechText ?? '',
+        classification = classification ?? label ?? 'obstacle',
+        distanceCm = distanceCm ?? (distanceMeters != null ? distanceMeters * 100.0 : null),
+        createdAt = createdAt ?? timestamp ?? DateTime.now(),
         timeout = timeout ??
             (priority == AlertPriority.p1Navigation
                 ? const Duration(seconds: 2)
                 : null);
+
+  String get label => classification;
+  String get speechText => text;
+  double? get distanceMeters => distanceCm != null ? distanceCm! / 100.0 : null;
+  DateTime get timestamp => createdAt;
 
   /// Key used for (class, zone) cooldown tracking and repeat coalescing.
   String get cooldownKey => '${classification.toLowerCase().trim()}_${zone?.id ?? "none"}';

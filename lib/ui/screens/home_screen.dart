@@ -28,6 +28,11 @@ class HomeScreen extends StatelessWidget {
             Navigator.pushNamed(context, '/camera');
           }),
           const SizedBox(height: 16),
+          BigButton(label: 'Sensor & Vision Debugger', icon: Icons.tune_rounded, onPressed: () {
+            Fx.haptic(Sig.primary);
+            Navigator.pushNamed(context, '/debug');
+          }),
+          const SizedBox(height: 16),
           BigButton(label: 'Demo Simulation', icon: Icons.science_rounded, onPressed: () {
             Fx.haptic(Sig.primary);
             Navigator.pushNamed(context, '/demo');

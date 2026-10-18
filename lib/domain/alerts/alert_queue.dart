@@ -31,8 +31,12 @@ class AlertQueue {
     this.cooldownDuration = const Duration(seconds: 3),
     this.p1StaleDuration = const Duration(seconds: 2),
     this.maxQueueSize = 10,
-    this.onP0DangerTriggered,
-  });
+    void Function(AlertItem dangerItem)? onP0DangerTriggered,
+    void Function(AlertItem dangerItem)? onP0Dispatched,
+  }) : onP0DangerTriggered = onP0DangerTriggered ?? onP0Dispatched;
+
+  AlertItem? dequeue({DateTime? now, bool isSystemIdle = true}) =>
+      pollNext(isTtsIdle: isSystemIdle, now: now);
 
   /// Enqueues an [item] according to priority, cooldown, and repeat coalescing rules.
   /// Returns `true` if the item was accepted into the queue, `false` if dropped (e.g. cooldown or duplicate).

@@ -13,6 +13,8 @@ enum SpatialZone {
 
   const SpatialZone(this.id, this.speechLabel);
 
+  String get spokenLabel => speechLabel;
+
   /// Computes the spatial zone from a normalized bounding box horizontal center [centerX] (0.0 to 1.0)
   /// given the camera's horizontal field of view in degrees [hfovDegrees] (typically ~65 deg for mobile cameras).
   static SpatialZone fromNormalizedCenter(double centerX, {double hfovDegrees = 65.0}) {

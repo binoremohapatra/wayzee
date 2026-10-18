@@ -5,17 +5,20 @@ import '../../core/accessibility/accessible_semantics.dart';
 /// Screen scaffold enforcing true-black background, TalkBack announcements, and focus order.
 class AccessibleScaffold extends StatefulWidget {
   final String screenTitle;
+  final String? spokenScreenTitle;
   final Widget body;
   final Widget? bottomNavigationBar;
   final bool announceOnEntry;
 
   const AccessibleScaffold({
     super.key,
-    required this.screenTitle,
+    String? screenTitle,
+    String? title,
+    this.spokenScreenTitle,
     required this.body,
     this.bottomNavigationBar,
     this.announceOnEntry = true,
-  });
+  }) : screenTitle = screenTitle ?? title ?? 'Wayze';
 
   @override
   State<AccessibleScaffold> createState() => _AccessibleScaffoldState();
