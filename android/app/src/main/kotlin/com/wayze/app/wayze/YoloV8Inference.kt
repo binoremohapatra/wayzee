@@ -2,7 +2,6 @@ package com.wayze.app.wayze
 
 import android.content.Context
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.support.common.FileUtil
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
