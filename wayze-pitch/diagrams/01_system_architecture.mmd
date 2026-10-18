@@ -1,0 +1,52 @@
+```mermaid
+graph TB
+    subgraph SENSING ["Sensing & Input Layer"]
+        CAM["Phone Camera (CameraX)<br/>30 FPS RAM-only YUV"]
+        IMU["Phone IMU (Accel/Gyro)<br/>Orientation & Stationary check"]
+        MOCK_CANE["MockCaneSource<br/>Slider / Scripted Scenarios"]
+        BLE_CANE["Future BLE Cane<br/>ESP32-S3 (ToF+Ultrasonic+IMU)"]
+        VOL_KEYS["Hardware Volume Keys<br/>Up: Voice | Down: Repeat"]
+        MIC["Microphone Audio<br/>16kHz PCM Stream"]
+    end
+
+    subgraph NATIVE_CORE ["Android Native Engine (Kotlin)"]
+        PRE["YUV to RGB Letterbox<br/>320x320 Direct Buffer"]
+        TFLITE["YOLOv8n INT8 TFLite<br/>XNNPACK (2 Threads, CPU)"]
+        NMS["Non-Maximum Suppression<br/>IoU: 0.45, Conf: 0.25-0.45"]
+        FG_SVC["Foreground Service<br/>PARTIAL_WAKE_LOCK (Screen-Off)"]
+    end
+
+    subgraph FLUTTER_DOMAIN ["Flutter Runtime & Intelligence (Dart)"]
+        BRIDGE["NativeVisionBridge<br/>EventChannel (Boxes, Zones, Latency)"]
+        TRACKER["Vision Tracker<br/>IoU Matching + Kalman Filter"]
+        FUSION["Fusion Engine<br/>Vision + Cane Range Fusion"]
+        VOSK["Offline Vosk STT<br/>Hindi + English Grammar Ladder"]
+        INTENTS["Intent Matcher<br/>navigate, stop, where am i, repeat"]
+        STATE_MACHINE["State Machine<br/>Idle -> Listening -> Navigating -> SafeMode"]
+        NAV_GRAPH["SQLite Map Database<br/>Nodes, Edges, Hazard Weights"]
+        DIJKSTRA["In-Memory Dijkstra Router<br/>Spoken Step Instructions"]
+        ALERT_Q["Alert Priority Queue<br/>P0 Danger | P1 Nav | P2 Info"]
+    end
+
+    subgraph OUTPUT_LAYER ["Multi-Modal Output Layer"]
+        TTS["Native Android TTS<br/>Hindi & English Audio Prompts"]
+        HAPTIC["Haptic Engine<br/>P0 Heavy | P1 Double | Tick Heartbeat"]
+        UI_OLED["Accessible OLED UI<br/>64dp Touch Targets, TalkBack"]
+    end
+
+    CAM --> PRE --> TFLITE --> NMS --> BRIDGE
+    FG_SVC -.keeps alive screen-off.-> NATIVE_CORE
+    FG_SVC -.keeps alive screen-off.-> FLUTTER_DOMAIN
+    MIC --> VOSK --> INTENTS --> STATE_MACHINE
+    VOL_KEYS --> STATE_MACHINE
+    BRIDGE --> TRACKER --> FUSION
+    IMU --> FUSION
+    MOCK_CANE -.simulated.-> FUSION
+    BLE_CANE -.future GATT.-> FUSION
+    NAV_GRAPH --> DIJKSTRA --> STATE_MACHINE
+    FUSION --> ALERT_Q
+    STATE_MACHINE --> ALERT_Q
+    ALERT_Q --> TTS
+    ALERT_Q --> HAPTIC
+    STATE_MACHINE --> UI_OLED
+```

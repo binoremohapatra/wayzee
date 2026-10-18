@@ -1,0 +1,22 @@
+```mermaid
+graph TD
+    ALERT_IN["Incoming Alert Candidate<br/>(Class, Zone, Distance, Floor Contact)"] --> COOLDOWN{"Same (Class, Zone)<br/>within 3 Seconds?"}
+    
+    COOLDOWN -- Yes --> DIST_CHECK{"Distance Override?<br/>(>=20% or >=30cm closer)"}
+    DIST_CHECK -- No --> DISCARD["Suppressed by Cooldown<br/>(Prevents Annoying Chatter)"]
+    DIST_CHECK -- Yes --> ENQUEUE["Enqueue Alert"]
+    COOLDOWN -- No --> ENQUEUE
+
+    ENQUEUE --> PRIORITY{"Check Priority"}
+
+    PRIORITY -- P0 Danger --> P0_ACTION["FLUSH lower queue items<br/>INTERRUPT active TTS speech<br/>FIRE 400ms Heavy Vibration<br/>SPEAK: 'Stairs down ahead. Stop.'"]
+    
+    PRIORITY -- P1 Navigation --> P1_ACTION["Queue with 2s Expiration<br/>Spoken if not expired<br/>FIRE double short pulse (80ms+80ms)"]
+    
+    PRIORITY -- P2 Info --> P2_ACTION["Spoken ONLY when Speech Synthesizer is Idle<br/>No haptics"]
+
+    style P0_ACTION fill:#ff6666,stroke:#990000,stroke-width:2px,color:#fff
+    style P1_ACTION fill:#ffcc66,stroke:#cc9900,stroke-width:1px
+    style P2_ACTION fill:#99ccff,stroke:#0066cc,stroke-width:1px
+    style DISCARD fill:#cccccc,stroke:#666666,stroke-width:1px
+```

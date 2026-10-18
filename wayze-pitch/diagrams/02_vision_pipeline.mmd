@@ -1,0 +1,26 @@
+```mermaid
+flowchart LR
+    FRAME["Camera Frame<br/>YUV_420_888<br/>(In-RAM Only)"]
+    PRE["Direct ByteBuffer<br/>Letterbox 320x320 RGB<br/>Zero Heap Alloc"]
+    TFLITE["YOLOv8n INT8 Model<br/>XNNPACK (2 Threads)<br/>Target: 40-70ms"]
+    OUTPUT["Raw Output Tensor<br/>[1, 4+nc, 2100]<br/>cx, cy, w, h, class_scores"]
+    NMS["Class-wise NMS<br/>IoU: 0.45, Conf: >=0.25"]
+    BEARING["HFOV Bearing Calc<br/>left < -12 deg<br/>center ±12 deg<br/>right > +12 deg"]
+    CONFIRM["Temporal Filter<br/>2-3 Consecutive Frames<br/>Suppresses Flicker"]
+    THREAT["Threat Scoring<br/>Zone + Area Growth + BottomY"]
+    ALERT["To Fusion Engine<br/>Obstacle Detection Event"]
+
+    FRAME --> PRE
+    PRE --> TFLITE
+    TFLITE --> OUTPUT
+    OUTPUT --> NMS
+    NMS --> BEARING
+    BEARING --> CONFIRM
+    CONFIRM --> THREAT
+    THREAT --> ALERT
+
+    style FRAME fill:#ff9999,stroke:#333,stroke-width:1px
+    style TFLITE fill:#99ccff,stroke:#333,stroke-width:2px
+    style CONFIRM fill:#ccffcc,stroke:#333,stroke-width:1px
+    style ALERT fill:#ffff99,stroke:#333,stroke-width:1px
+```

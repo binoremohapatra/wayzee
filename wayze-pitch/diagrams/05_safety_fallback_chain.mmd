@@ -1,0 +1,36 @@
+```mermaid
+graph TD
+    subgraph FAILURES ["Failure Modes"]
+        F1["Camera / YOLO Freeze or Crash"]
+        F2["BLE Smart Cane Lost"]
+        F3["Vosk Speech Not Recognized"]
+        F4["TTS Audio Engine Failure"]
+        F5["Corrupted Map File on Startup"]
+        F6["Phone in Pocket / Bad Tilt Angle"]
+        F7["Crash Loop (3 crashes in 5 min)"]
+        F8["Silent App Termination"]
+    end
+
+    subgraph ACTIONS ["Deterministic Recovery Action"]
+        A1["Watchdog auto-restarts vision up to 3x.<br/>If failed: Sensor+Map Mode.<br/>'Vision stopped. Sensor and map mode active.'"]
+        A2["Auto-fallback to Phone-Only Mode.<br/>Centimeters suppressed to near/far.<br/>'Cane disconnected. Phone-only mode.'"]
+        A3["Repair Ladder:<br/>Soft retry -> Guided retry -> Yes/No -> Tactile buttons."]
+        A4["Tactile Vibration Fallback:<br/>P0 = 400ms heavy buzz<br/>P1 = 80ms+80ms double pulse"]
+        A5["Load atomic wayze_map.json.bak backup.<br/>'Map restored from backup.'"]
+        A6["IMU Orientation Guard:<br/>'Place phone on your chest.'"]
+        A7["Lock into SAFE MODE.<br/>'Wayze is in safe mode. Use your cane.'"]
+        A8["25s Heartbeat Periodic Tick.<br/>If ticks stop: user knows app stopped!"]
+    end
+
+    F1 --> A1
+    F2 --> A2
+    F3 --> A3
+    F4 --> A4
+    F5 --> A5
+    F6 --> A6
+    F7 --> A7
+    F8 --> A8
+
+    style A7 fill:#ff4444,stroke:#880000,color:#fff
+    style A8 fill:#ffbb33,stroke:#cc8800,color:#000
+```

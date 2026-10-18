@@ -1,0 +1,31 @@
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+
+    Idle --> Listening: Vol-Up Long Press / Voice Trigger
+    Listening --> Navigating: Valid Destination Recognized
+    Listening --> Idle: Timeout / User says "Cancel"
+
+    Navigating --> Alerting: Obstacle / Hazard Detected
+    Alerting --> Navigating: Hazard Cleared / Route Continues
+
+    Navigating --> Paused: Vol-Down Tap / User Pause
+    Paused --> Navigating: Resume Command
+
+    Navigating --> Idle: Destination Reached / "Stop" Command
+
+    Idle --> Error: Hardware / Permission Exception
+    Navigating --> Error: Sensor / Vision Crash
+    Error --> Idle: Auto-Recovery / Spoken Error
+
+    Idle --> SafeMode: 3 Crashes in 5 Minutes
+    Navigating --> SafeMode: 3 Crashes in 5 Minutes
+    Error --> SafeMode: 3 Crashes in 5 Minutes
+    SafeMode --> Idle: Manual Big Button Reset
+
+    note right of SafeMode
+        Camera OFF, Model OFF, Voice OFF.
+        Tactile vibration + cane sensor only.
+        Spoken: "Wayze is in safe mode. Use your cane."
+    end note
+```
