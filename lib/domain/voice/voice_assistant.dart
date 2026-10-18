@@ -6,6 +6,8 @@ import '../../voice/speech_recognizer_service.dart';
 import '../../voice/place_resolver.dart';
 import '../../voice/clock.dart';
 import '../state/app_state_machine.dart';
+import '../navigation/location_query_service.dart';
+import '../safety/emergency_beacon_service.dart';
 
 /// Integrates offline voice intent matching and repair ladder into the runtime.
 class VoiceAssistant {
@@ -26,6 +28,8 @@ class VoiceAssistant {
     String language = 'en',
     List<String> availablePlaces = const ['bedroom', 'bathroom', 'kitchen', 'door', 'exit'],
     Clock? clock,
+    LocationQueryService? locationQueryService,
+    EmergencyBeaconService? emergencyBeaconService,
   }) {
     late final VoiceSession session;
 
@@ -49,6 +53,7 @@ class VoiceAssistant {
             stateMachine.handleEvent(const RecoverToIdleEvent());
             break;
           case Intent.sendHelp:
+            emergencyBeaconService?.startEmergencyBeacon();
             stateMachine.handleEvent(
               const SystemErrorEvent(
                 errorMessage: 'Emergency SOS triggered by voice',
@@ -57,7 +62,13 @@ class VoiceAssistant {
             );
             break;
           case Intent.whereAmI:
-            speechCenter.speak('You are currently near the central corridor.');
+            if (locationQueryService != null) {
+              locationQueryService.getLocationReport().then((r) {
+                speechCenter.speak(r.spokenSummary);
+              });
+            } else {
+              speechCenter.speak('You are currently near the central corridor.');
+            }
             break;
           default:
             break;

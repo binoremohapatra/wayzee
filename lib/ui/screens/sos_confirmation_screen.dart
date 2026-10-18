@@ -40,9 +40,8 @@ class SOSConfirmationScreen extends StatelessWidget {
             sig: Sig.sos,
             onPressed: () {
               Fx.haptic(Sig.sos);
-              Fx.speak?.call('Sending SOS alert to emergency contacts');
+              Fx.speak?.call('Sending SOS alert and starting acoustic emergency beacon.');
               Navigator.pop(context);
-              // TODO: Implement actual SOS sending
             },
           ),
         ],

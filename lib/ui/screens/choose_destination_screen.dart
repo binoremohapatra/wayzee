@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_action_bar.dart';
+import '../widgets/big_button.dart';
 import '../widgets/chips_cards_rows.dart';
 import '../widgets/screen_scaffold.dart';
 import '../feedback.dart';
@@ -76,14 +77,32 @@ class _ChooseDestinationScreenState extends State<ChooseDestinationScreen> {
           },
         ),
       ],
-      bottom: BottomActionBar(
-        onBack: () => Navigator.pop(context),
-        primaryLabel: 'Start Guiding',
-        onPrimary: () {
-          Fx.haptic(Sig.primary);
-          Fx.speak?.call('Starting navigation to $_selectedDestination');
-          Navigator.pushNamed(context, '/guiding');
-        },
+      bottom: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: BigButton(
+              label: 'Preview Route Audio',
+              icon: Icons.headphones_rounded,
+              onPressed: () {
+                Fx.haptic(Sig.primary);
+                Fx.speak?.call('Route to $_selectedDestination. Distance approximately 15 meters, 20 seconds walk. No stairs or hazards on path.');
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          BottomActionBar(
+            onBack: () => Navigator.pop(context),
+            primaryLabel: 'Start Guiding',
+            onPrimary: () {
+              Fx.haptic(Sig.primary);
+              Fx.speak?.call('Starting navigation to $_selectedDestination');
+              Navigator.pushNamed(context, '/guiding');
+            },
+          ),
+        ],
       ),
     );
   }

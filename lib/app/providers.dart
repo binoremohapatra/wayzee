@@ -15,6 +15,11 @@ import '../data/storage/map_database.dart';
 import '../core/accessibility/haptic_service.dart';
 import '../core/reliability/thermal_governor.dart';
 import '../core/reliability/vision_watchdog.dart';
+import '../domain/navigation/location_query_service.dart';
+import '../domain/navigation/map_sharing_service.dart';
+import '../domain/navigation/route_preview_service.dart';
+import '../domain/vision/offline_sign_ocr.dart';
+import '../domain/safety/emergency_beacon_service.dart';
 
 /// Provider for TTS service
 final ttsServiceProvider = Provider<TtsService>((ref) {
@@ -142,4 +147,39 @@ final visionWatchdogProvider = Provider<VisionWatchdog>((ref) {
   final watchdog = VisionWatchdog(visionBridge: bridge, ttsService: tts);
   ref.onDispose(() => watchdog.stop());
   return watchdog;
+});
+
+/// Provider for LocationQueryService ("Where am I?")
+final locationQueryServiceProvider = Provider<LocationQueryService>((ref) {
+  final db = ref.watch(mapDatabaseProvider);
+  final tts = ref.watch(ttsServiceProvider);
+  return LocationQueryService(mapDatabase: db, ttsService: tts);
+});
+
+/// Provider for OfflineSignOcrService
+final offlineSignOcrServiceProvider = Provider<OfflineSignOcrService>((ref) {
+  final service = OfflineSignOcrService();
+  ref.onDispose(() => service.dispose());
+  return service;
+});
+
+/// Provider for MapSharingService
+final mapSharingServiceProvider = Provider<MapSharingService>((ref) {
+  final db = ref.watch(mapDatabaseProvider);
+  return MapSharingService(mapDatabase: db);
+});
+
+/// Provider for RoutePreviewService
+final routePreviewServiceProvider = Provider<RoutePreviewService>((ref) {
+  final tts = ref.watch(ttsServiceProvider);
+  return RoutePreviewService(ttsService: tts);
+});
+
+/// Provider for EmergencyBeaconService
+final emergencyBeaconServiceProvider = Provider<EmergencyBeaconService>((ref) {
+  final tts = ref.watch(ttsServiceProvider);
+  final haptics = ref.watch(hapticServiceProvider);
+  final beacon = EmergencyBeaconService(ttsService: tts, hapticService: haptics);
+  ref.onDispose(() => beacon.dispose());
+  return beacon;
 });

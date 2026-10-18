@@ -130,6 +130,7 @@ class FlutterTtsService implements TtsService {
 /// Deterministic mock TTS service for unit and widget testing.
 class MockTtsService implements TtsService {
   final List<String> spokenUtterances = [];
+  List<String> get spokenPhrases => spokenUtterances;
   final List<AlertPriority> spokenPriorities = [];
   final StreamController<bool> _stateController = StreamController<bool>.broadcast();
 
