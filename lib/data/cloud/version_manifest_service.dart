@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 /// Version manifest item representing an OTA model or map update.

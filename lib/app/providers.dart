@@ -4,7 +4,6 @@ import '../domain/models/alert_item.dart';
 import '../domain/state/app_state_machine.dart';
 import '../domain/vision/vision_tracker.dart';
 import '../domain/vision/vision_metrics.dart';
-import '../domain/fusion/sensor_source.dart';
 import '../domain/fusion/fusion_engine.dart';
 import '../domain/navigation/navigation_graph.dart';
 import '../data/tts_stt/tts_service.dart';

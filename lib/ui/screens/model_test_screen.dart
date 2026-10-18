@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/spatial_zone.dart';
-import '../../domain/vision/vision_metrics.dart';
 import '../../data/vision/native_vision_bridge.dart';
 import '../../app/providers.dart';
 
@@ -34,8 +33,8 @@ class _ModelTestScreenState extends ConsumerState<ModelTestScreen> {
   Timer? _replayTimer;
 
   // Battery and thermal status
-  int _batteryLevel = 88;
-  String _thermalStatus = 'Nominal';
+  final int _batteryLevel = 88;
+  final String _thermalStatus = 'Nominal';
 
   @override
   void initState() {

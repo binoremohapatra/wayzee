@@ -66,7 +66,7 @@ class _MapSetupScreenState extends State<MapSetupScreen> {
                   distanceMeters: 5.0,
                   relativeBearingDegrees: 0.0,
                 );
-                Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
                 await _loadMap();
               }
             },
@@ -146,7 +146,7 @@ class _MapSetupScreenState extends State<MapSetupScreen> {
               onPressed: () async {
                 final jsonStr = await widget.mapDatabase.exportToJson();
                 await widget.mapDatabase.saveMapWithBackupAndAtomicWrite(jsonStr);
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Map exported & saved atomically')),
                   );

@@ -108,8 +108,6 @@ class AppStateMachine {
 
   /// Process an event and transition states. Spoken feedback is issued on errors.
   Future<void> handleEvent(WayzeEvent event) async {
-    final previous = _currentState;
-
     if (event is EnterSafeModeEvent) {
       _lastErrorMessage = event.reason;
       _transitionTo(WayzeState.safeMode);

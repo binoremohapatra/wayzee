@@ -23,31 +23,45 @@ class VoiceAssistant {
     required SpeechRecognizerService recognizer,
     required PlaceResolver placeResolver,
     required IntentMatcher intentMatcher,
-    Clock clock = const SystemClock(),
+    String language = 'en',
+    List<String> availablePlaces = const ['bedroom', 'bathroom', 'kitchen', 'door', 'exit'],
+    Clock? clock,
   }) {
     late final VoiceSession session;
 
     session = VoiceSession(
-      speech: speechCenter,
+      speechCenter: speechCenter,
       recognizer: recognizer,
-      places: placeResolver,
-      matcher: intentMatcher,
-      clock: clock,
-      onNavigate: (place) {
-        stateMachine.handleEvent(
-          StartNavigationEvent(destinationId: place, destinationName: place),
-        );
-      },
-      onStop: () {
-        stateMachine.handleEvent(const RecoverToIdleEvent());
-      },
-      onSendHelp: () {
-        stateMachine.handleEvent(
-          const SystemErrorEvent(errorMessage: 'Emergency SOS triggered by voice', canAutoRecover: false),
-        );
-      },
-      onWhereAmI: () {
-        speechCenter.speak('You are currently near the central corridor.');
+      language: language,
+      availablePlaces: availablePlaces,
+      placeResolver: placeResolver,
+      clock: clock ?? RealClock(),
+      onIntentMatched: (intent, place) {
+        switch (intent) {
+          case Intent.startNavigation:
+            if (place != null) {
+              stateMachine.handleEvent(
+                StartNavigationEvent(destinationId: place, destinationName: place),
+              );
+            }
+            break;
+          case Intent.stopNavigation:
+            stateMachine.handleEvent(const RecoverToIdleEvent());
+            break;
+          case Intent.sendHelp:
+            stateMachine.handleEvent(
+              const SystemErrorEvent(
+                errorMessage: 'Emergency SOS triggered by voice',
+                canAutoRecover: false,
+              ),
+            );
+            break;
+          case Intent.whereAmI:
+            speechCenter.speak('You are currently near the central corridor.');
+            break;
+          default:
+            break;
+        }
       },
     );
 

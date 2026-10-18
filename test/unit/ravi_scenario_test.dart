@@ -151,6 +151,7 @@ void main() {
       // 20s: Ravi navigates around chair, reaches Bedroom Door
       simTime = simTime.add(const Duration(seconds: 8));
       final step2 = route.steps[1]; // Door -> Hall (Turn left)
+      expect(step2, isNotNull);
       await tts.speak('Door aa gaya. Left mudo, hall hai.', priority: AlertPriority.p1Navigation);
       expect(tts.spokenUtterances.last, equals('Door aa gaya. Left mudo, hall hai.'));
 

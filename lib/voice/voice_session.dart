@@ -104,6 +104,14 @@ class VoiceSession {
     _state = VoiceSessionState.idle;
   }
 
+  void cancel() {
+    stop();
+  }
+
+  void dispose() {
+    stop();
+  }
+
   bool _resultReceivedInCurrentTurn = false;
 
   // Start recognition with pause/resume guarantee

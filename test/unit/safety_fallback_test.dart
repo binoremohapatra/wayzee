@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wayze/core/accessibility/haptic_service.dart';
 import 'package:wayze/core/reliability/thermal_governor.dart';
-import 'package:wayze/data/sensors/ble_cane_source.dart';
 import 'package:wayze/data/tts_stt/tts_service.dart';
 import 'package:wayze/data/vision/native_vision_bridge.dart';
 import 'package:wayze/domain/alerts/alert_queue.dart';

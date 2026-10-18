@@ -158,6 +158,11 @@ class _DebugScreenState extends State<DebugScreen> {
                 widget.mockCaneSource.setManualValues(downDistance: val);
               },
             ),
+            const SizedBox(height: 8.0),
+            Text(
+              'IMU Acceleration: ${_acceleration.toStringAsFixed(1)} m/s²',
+              style: const TextStyle(color: Colors.white, fontSize: 16.0),
+            ),
           ],
         ),
       ),

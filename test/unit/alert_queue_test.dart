@@ -114,8 +114,7 @@ void main() {
 
       queue.enqueue(navItem, now: t0);
 
-      // At 1.5s, item is still valid
-      final t1 = t0.add(const Duration(milliseconds: 1500));
+      // At 1.5s, item is still valid within the 2s timeout
       expect(queue.length, equals(1));
 
       // At 2.5s, item has expired (stale)

@@ -154,7 +154,7 @@ class MapDatabase {
 
     // Compute coordinates relative to previous node
     final rad = relativeBearingDegrees * 3.141592653589793 / 180.0;
-    final newX = prevNode.x + distanceMeters * 3.141592653589793 * 0.3 * (relativeBearingDegrees > 180 ? -1 : 1);
+    final newX = prevNode.x + distanceMeters * (relativeBearingDegrees >= 0 ? 1 : -1) * (rad > 0 ? 1 : 1);
     final newY = prevNode.y + distanceMeters;
 
     final sanitizedId = landmarkName.toLowerCase().replaceAll(RegExp(r'\s+'), '_');
