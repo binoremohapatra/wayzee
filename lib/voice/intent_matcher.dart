@@ -171,13 +171,16 @@ class IntentMatcher {
     ],
   };
 
-  // Command patterns - Hindi (Devanagari)
+  // Command patterns - Hindi (Devanagari and Romanized)
   static const Map<Intent, List<String>> _hindiPatterns = {
     Intent.startNavigation: [
       'मुझे',
       'ले चलो',
       'चलो',
       'नेविगेट करो',
+      'le chalo',
+      'chalo',
+      'take me to',
     ],
     Intent.whereAmI: [
       'मैं कहाँ हूँ',
@@ -378,10 +381,9 @@ class IntentMatcher {
 
   // Extract place name from navigation command
   static String? _extractPlaceName(String text, String language) {
-    if (language == 'Hindi') {
-      // Hindi: "मुझे लाइब्रेरी जाना है" -> "लाइब्रेरी"
-      // Remove suffixes: "जाना है", "ले चलो", "चलो"
-      final suffixes = [' जाना है', ' ले चलो', ' चलो', ' जाओ', ' जाना'];
+    if (language == 'Hindi' || text.contains('le chalo') || text.contains('chalo')) {
+      // Hindi: "मुझे लाइब्रेरी जाना है" -> "लाइब्रेरी" or "Bathroom le chalo" -> "bathroom"
+      final suffixes = [' जाना है', ' ले चलो', ' चलो', ' जाओ', ' जाना', ' le chalo', ' chalo'];
       for (final suffix in suffixes) {
         if (text.endsWith(suffix)) {
           var place = text.substring(0, text.length - suffix.length).trim();
@@ -394,22 +396,26 @@ class IntentMatcher {
           }
         }
       }
-    } else {
-      // English: "take me to the library" -> "the library"
-      final prefixes = ['take me to', 'go to', 'navigate to', 'reach'];
-      for (final prefix in prefixes) {
-        if (text.contains(prefix)) {
-          final index = text.indexOf(prefix);
-          var place = text.substring(index + prefix.length).trim();
-          if (place.isNotEmpty) {
-            return place;
-          }
+    }
+    
+    // English: "take me to the library" -> "the library"
+    final prefixes = ['take me to', 'go to', 'navigate to', 'reach'];
+    for (final prefix in prefixes) {
+      if (text.contains(prefix)) {
+        final index = text.indexOf(prefix);
+        var place = text.substring(index + prefix.length).trim();
+        if (place.isNotEmpty) {
+          return place;
         }
       }
     }
     
     return null;
   }
+
+  // Instance helper method
+  IntentMatch match(String text, [String language = 'Hindi']) =>
+      matchIntent(text, language);
 
   // Check if two intents are too similar (for disambiguation)
   static bool areSimilar(String text1, String text2) {
