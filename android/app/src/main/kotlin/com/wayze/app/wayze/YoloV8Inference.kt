@@ -16,48 +16,68 @@ data class DetectionResult(
     val zone: String,
     val boxArea: Float,
     val bottomY: Float,
-    val timestamp: Long
+    val timestamp: Long,
+    val x1: Float = 0f,
+    val y1: Float = 0f,
+    val x2: Float = 0f,
+    val y2: Float = 0f
 )
 
 class YoloV8Inference(
     private val context: Context,
-    private val modelPath: String = "models/yolov8n_int8_320.tflite",
+    private val modelPath: String? = null,
     numThreads: Int = 2
 ) {
     private var interpreter: Interpreter? = null
     private val inputSize = 320
     private val hfovDegrees = 65.0f
 
-    // Standard indoor navigation & hazard classes (custom Wayze + COCO subset)
+    // Standard indoor navigation & hazard classes
     private val defaultLabels = listOf(
         "door", "stairs_up", "stairs_down", "person", "chair",
         "table", "obstacle", "drop_off", "sign", "elevator"
     )
+    private var activeLabels: List<String> = defaultLabels
 
     init {
+        activeLabels = loadLabels()
         initializeInterpreter(numThreads)
     }
 
+    private fun loadLabels(): List<String> {
+        return try {
+            val stream = context.assets.open("models/labels.txt")
+            val lines = stream.bufferedReader().readLines().map { it.trim() }.filter { it.isNotEmpty() }
+            if (lines.isNotEmpty()) lines else defaultLabels
+        } catch (_: Exception) {
+            defaultLabels
+        }
+    }
+
     private fun initializeInterpreter(threads: Int) {
-        try {
-            val options = Interpreter.Options().apply {
-                setNumThreads(threads)
-                // Use XNNPACK delegate for optimal INT8 acceleration on ARM Cortex CPUs
-                setUseXNNPACK(true)
-            }
-            val modelBuffer = loadModelFile(modelPath)
-            interpreter = Interpreter(modelBuffer, options)
-        } catch (e: Exception) {
-            // Fallback: try loading alternative model from assets if specific path not found
+        val options = Interpreter.Options().apply {
+            setNumThreads(threads)
+            // Use XNNPACK delegate for optimal INT8 acceleration on ARM Cortex CPUs
+            setUseXNNPACK(true)
+        }
+
+        val candidates = if (modelPath != null) {
+            listOf(modelPath)
+        } else {
+            listOf(
+                "models/wayze_v1.tflite",
+                "models/wayze.tflite",
+                "models/yolov8n_int8_320.tflite"
+            )
+        }
+
+        for (candidate in candidates) {
             try {
-                val fallbackBuffer = loadModelFile("models/wayze.tflite")
-                interpreter = Interpreter(fallbackBuffer, Interpreter.Options().apply {
-                    setNumThreads(threads)
-                    setUseXNNPACK(true)
-                })
+                val modelBuffer = loadModelFile(candidate)
+                interpreter = Interpreter(modelBuffer, options)
+                if (interpreter != null) break
             } catch (_: Exception) {
-                // If model file is missing during test or stub runs, interpreter remains null
-                interpreter = null
+                // Try next candidate
             }
         }
     }
@@ -78,7 +98,7 @@ class YoloV8Inference(
     }
 
     /**
-     * Executes inference on the preprocessed 320x320 INT8 buffer.
+     * Executes inference on the preprocessed 320x320 INT8/FP32 buffer.
      * The image buffer is strictly consumed in RAM and never saved or transmitted.
      */
     fun processFrame(
@@ -88,9 +108,12 @@ class YoloV8Inference(
     ): List<DetectionResult> {
         val tflite = interpreter ?: return emptyList()
 
-        // Output tensor shape for YOLOv8 320x320: [1, 4 + numClasses, 2100]
-        val numClasses = defaultLabels.size
-        val numPredictions = 2100
+        // Detect output tensor shape dynamically: [1, 4 + numClasses, numPredictions]
+        val outputTensor = tflite.getOutputTensor(0)
+        val shape = outputTensor.shape()
+        val numClasses = if (shape != null && shape.size >= 3) shape[1] - 4 else activeLabels.size
+        val numPredictions = if (shape != null && shape.size >= 3) shape[2] else 2100
+
         val outputArray = Array(1) { Array(4 + numClasses) { FloatArray(numPredictions) } }
 
         inputBuffer.rewind()
@@ -155,12 +178,16 @@ class YoloV8Inference(
             }
 
             DetectionResult(
-                label = defaultLabels.getOrElse(box.classIndex) { "obstacle" },
+                label = activeLabels.getOrElse(box.classIndex) { "obstacle" },
                 confidence = box.score,
                 zone = zone,
                 boxArea = area,
                 bottomY = bottomY,
-                timestamp = now
+                timestamp = now,
+                x1 = box.x1,
+                y1 = box.y1,
+                x2 = box.x2,
+                y2 = box.y2
             )
         }
     }

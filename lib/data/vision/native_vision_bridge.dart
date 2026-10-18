@@ -10,6 +10,10 @@ class VisionDetection {
   final double bottomY;
   final int timestamp;
   final int latencyMs;
+  final double x1;
+  final double y1;
+  final double x2;
+  final double y2;
 
   const VisionDetection({
     required this.label,
@@ -19,6 +23,10 @@ class VisionDetection {
     required this.bottomY,
     required this.timestamp,
     this.latencyMs = 0,
+    this.x1 = 0.0,
+    this.y1 = 0.0,
+    this.x2 = 0.0,
+    this.y2 = 0.0,
   });
 
   factory VisionDetection.fromMap(Map<dynamic, dynamic> map) {
@@ -35,6 +43,10 @@ class VisionDetection {
       bottomY: (map['bottomY'] as num?)?.toDouble() ?? 0.0,
       timestamp: (map['timestamp'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
       latencyMs: (map['latencyMs'] as num?)?.toInt() ?? 0,
+      x1: (map['x1'] as num?)?.toDouble() ?? 0.0,
+      y1: (map['y1'] as num?)?.toDouble() ?? 0.0,
+      x2: (map['x2'] as num?)?.toDouble() ?? 0.0,
+      y2: (map['y2'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

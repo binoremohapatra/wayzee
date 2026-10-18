@@ -21,6 +21,7 @@ import 'ui/screens/about_model_info_screen.dart';
 import 'ui/screens/debug_screen.dart';
 import 'ui/screens/map_setup_screen.dart';
 import 'ui/screens/first_launch_disclaimer_screen.dart';
+import 'ui/screens/model_test_screen.dart';
 import 'domain/safety/safety_disclaimer.dart';
 import 'app/providers.dart';
 
@@ -172,6 +173,7 @@ class WayzeApp extends StatelessWidget {
                 mapDatabase: ref.watch(mapDatabaseProvider),
               ),
             ),
+        '/model_test': (context) => const ModelTestScreen(),
         '/disclaimer': (context) {
           if (prefs != null) {
             return FirstLaunchDisclaimerScreen(

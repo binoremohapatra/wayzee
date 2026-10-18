@@ -117,7 +117,11 @@ class MainActivity : FlutterActivity() {
                         "boxArea" to d.boxArea.toDouble(),
                         "bottomY" to d.bottomY.toDouble(),
                         "timestamp" to d.timestamp,
-                        "latencyMs" to latencyMs
+                        "latencyMs" to latencyMs,
+                        "x1" to d.x1.toDouble(),
+                        "y1" to d.y1.toDouble(),
+                        "x2" to d.x2.toDouble(),
+                        "y2" to d.y2.toDouble()
                     )
                 }
                 visionEventSink?.success(mappedList)

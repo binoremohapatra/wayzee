@@ -78,6 +78,17 @@ class _DebugScreenState extends State<DebugScreen> {
                   Text('Inference FPS: $fps FPS', style: const TextStyle(color: Colors.white, fontSize: 18.0)),
                   Text('Latency p50: ${p50}ms  |  p95: ${p95}ms', style: const TextStyle(color: Colors.white, fontSize: 18.0)),
                   Text('False Alarms / Min: $falseAlarms', style: const TextStyle(color: Colors.white, fontSize: 18.0)),
+                  const SizedBox(height: 12.0),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AccessibleColors.tactileAccent,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                    ),
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('OPEN MODEL BENCHMARK & TEST SCREEN', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () => Navigator.pushNamed(context, '/model_test'),
+                  ),
                 ],
               ),
             ),
