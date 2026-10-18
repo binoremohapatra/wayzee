@@ -1,0 +1,5 @@
+door
+stairs
+glass_door
+pillar
+wet_floor_sign
