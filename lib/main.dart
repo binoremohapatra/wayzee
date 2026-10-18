@@ -19,6 +19,9 @@ import 'ui/screens/learn_the_signals_screen.dart';
 import 'ui/screens/demo_simulation_screen.dart';
 import 'ui/screens/about_model_info_screen.dart';
 import 'ui/screens/debug_screen.dart';
+import 'ui/screens/map_setup_screen.dart';
+import 'ui/screens/first_launch_disclaimer_screen.dart';
+import 'domain/safety/safety_disclaimer.dart';
 import 'app/providers.dart';
 
 void main() async {
@@ -131,11 +134,12 @@ void main() async {
     }
   };
 
-  runApp(const WayzeApp());
+  runApp(WayzeApp(prefs: prefs));
 }
 
 class WayzeApp extends StatelessWidget {
-  const WayzeApp({super.key});
+  final SharedPreferences? prefs;
+  const WayzeApp({super.key, this.prefs});
 
   @override
   Widget build(BuildContext context) {
@@ -163,6 +167,33 @@ class WayzeApp extends StatelessWidget {
                 visionMetrics: ref.watch(visionMetricsProvider),
               ),
             ),
+        '/map_setup': (context) => Consumer(
+              builder: (ctx, ref, _) => MapSetupScreen(
+                mapDatabase: ref.watch(mapDatabaseProvider),
+              ),
+            ),
+        '/disclaimer': (context) {
+          if (prefs != null) {
+            return FirstLaunchDisclaimerScreen(
+              safetyDisclaimer: SafetyDisclaimer(prefs!),
+              onAccepted: () => Navigator.pushReplacementNamed(context, '/home'),
+            );
+          }
+          return FutureBuilder<SharedPreferences>(
+            future: SharedPreferences.getInstance(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return FirstLaunchDisclaimerScreen(
+                safetyDisclaimer: SafetyDisclaimer(snapshot.data!),
+                onAccepted: () => Navigator.pushReplacementNamed(context, '/home'),
+              );
+            },
+          );
+        },
       },
       ),
     );

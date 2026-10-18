@@ -9,7 +9,8 @@ enum WayzeState {
   navigating,
   alerting,
   paused,
-  error;
+  error,
+  safeMode;
 
   String get spokenName {
     switch (this) {
@@ -25,6 +26,8 @@ enum WayzeState {
         return 'Guidance paused';
       case WayzeState.error:
         return 'System error';
+      case WayzeState.safeMode:
+        return 'Safe mode. Use your cane.';
     }
   }
 }
@@ -77,6 +80,15 @@ class RecoverToIdleEvent extends WayzeEvent {
   const RecoverToIdleEvent();
 }
 
+class EnterSafeModeEvent extends WayzeEvent {
+  final String reason;
+  const EnterSafeModeEvent([this.reason = 'Multiple system failures detected']);
+}
+
+class ExitSafeModeEvent extends WayzeEvent {
+  const ExitSafeModeEvent();
+}
+
 /// Deterministic, production state machine for Wayze.
 /// Every state has a recovery path; errors are spoken to the user, never silent.
 class AppStateMachine {
@@ -97,6 +109,16 @@ class AppStateMachine {
   /// Process an event and transition states. Spoken feedback is issued on errors.
   Future<void> handleEvent(WayzeEvent event) async {
     final previous = _currentState;
+
+    if (event is EnterSafeModeEvent) {
+      _lastErrorMessage = event.reason;
+      _transitionTo(WayzeState.safeMode);
+      await _ttsService.speak(
+        'Wayze is in safe mode. Use your cane.',
+        priority: AlertPriority.p0Danger,
+      );
+      return;
+    }
 
     if (event is SystemErrorEvent) {
       _lastErrorMessage = event.errorMessage;
@@ -203,6 +225,16 @@ class AppStateMachine {
           _transitionTo(WayzeState.idle);
           await _ttsService.speak(
             'Wayze recovered. Ready.',
+            priority: AlertPriority.p2Info,
+          );
+        }
+        break;
+
+      case WayzeState.safeMode:
+        if (event is ExitSafeModeEvent || event is RecoverToIdleEvent) {
+          _transitionTo(WayzeState.idle);
+          await _ttsService.speak(
+            'Safe mode exited. Wayze ready.',
             priority: AlertPriority.p2Info,
           );
         }

@@ -8,6 +8,7 @@ import '../../core/accessibility/haptic_service.dart';
 
 /// Sensor and Vision Fusion Engine.
 /// Fuses optical bounding box detections with real-time distance telemetry.
+/// In Phone-Only mode: NO centimeters are spoken to avoid false precision.
 class FusionEngine {
   final AlertQueue alertQueue;
   final VisionTracker visionTracker;
@@ -32,12 +33,14 @@ class FusionEngine {
     this.frontObstacleThresholdCm = 50.0,
   });
 
+  bool get isCaneConnected => _lastSensorReading?.isCaneConnected ?? false;
+
   void attachSensorSource(SensorSource source) {
     _sensorSubscription?.cancel();
     _sensorSubscription = source.readingStream.listen(ingestSensorReading);
   }
 
-  /// Evaluates distance telemetry rules (drop-off, imminent front collision)
+  /// Evaluates distance telemetry rules (drop-off, imminent front collision, glass doors)
   void ingestSensorReading(SensorReading reading) {
     _lastSensorReading = reading;
     final now = reading.timestamp;
@@ -64,7 +67,7 @@ class FusionEngine {
       _consecutiveDropOffCount = 0;
     }
 
-    // 2. Obstacle < 50cm rule:
+    // 2. Obstacle < 50cm rule (also catches glass doors missed by camera):
     final isFrontObstacleSample = reading.frontDistanceCm < frontObstacleThresholdCm && reading.frontDistanceCm > 0;
     if (isFrontObstacleSample) {
       _consecutiveFrontObstacleCount++;
@@ -75,7 +78,7 @@ class FusionEngine {
           speechText: 'Obstacle directly ahead. Stop.',
           priority: AlertPriority.p0Danger,
           zone: SpatialZone.center,
-          distanceMeters: reading.frontDistanceCm / 100.0,
+          distanceMeters: reading.isCaneConnected ? (reading.frontDistanceCm / 100.0) : null,
           timestamp: now,
         );
         hapticService.danger();
@@ -97,15 +100,24 @@ class FusionEngine {
     );
 
     for (final alert in confirmedAlerts) {
-      // Cross-reference with sensor distance if obstacle is in center zone
-      final effectiveDistance = (alert.zone == SpatialZone.center && _lastSensorReading != null)
+      final isCane = isCaneConnected;
+      String formattedSpeech = alert.speechText;
+
+      // Phone-only mode rule: Never speak centimeters, only "near" or "ahead"
+      if (!isCane && alert.priority != AlertPriority.p0Danger) {
+        final zonePhrase = alert.zone?.spokenLabel ?? 'directly ahead';
+        formattedSpeech = '${alert.label} $zonePhrase, near.';
+      }
+
+      // Cross-reference with sensor distance if cane is connected
+      final effectiveDistance = (alert.zone == SpatialZone.center && _lastSensorReading != null && isCane)
           ? (_lastSensorReading!.frontDistanceCm / 100.0)
           : alert.distanceMeters;
 
       final fusedAlert = AlertItem(
         id: alert.id,
         label: alert.label,
-        speechText: alert.speechText,
+        speechText: formattedSpeech,
         priority: alert.priority,
         zone: alert.zone,
         distanceMeters: effectiveDistance,
@@ -120,6 +132,20 @@ class FusionEngine {
     }
 
     return confirmedAlerts;
+  }
+
+  /// Handled when navigating into an unknown unmapped room
+  void announceUnknownRoom() {
+    alertQueue.enqueue(
+      AlertItem(
+        id: 'unknown_room_${DateTime.now().millisecondsSinceEpoch}',
+        label: 'map_status',
+        speechText: 'No map for this room. Live obstacle alerts active.',
+        priority: AlertPriority.p1Navigation,
+        zone: SpatialZone.center,
+        timestamp: DateTime.now(),
+      ),
+    );
   }
 
   void reset() {

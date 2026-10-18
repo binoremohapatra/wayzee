@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/navigation/navigation_graph.dart';
@@ -224,6 +225,59 @@ class MapDatabase {
         await txn.insert('edges', e, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     });
+  }
+
+  /// Validates graph consistency (no broken edges, no orphaned references)
+  Future<bool> validateGraphIntegrity() async {
+    final nodes = await getAllNodes();
+    final edges = await getAllEdges();
+
+    final nodeIds = nodes.map((n) => n.id).toSet();
+    for (final edge in edges) {
+      if (!nodeIds.contains(edge.fromId) || !nodeIds.contains(edge.toId)) {
+        return false; // Broken edge pointing to missing node
+      }
+    }
+    return true;
+  }
+
+  /// Atomic file write with .bak backup preservation before any overwrite
+  Future<void> saveMapWithBackupAndAtomicWrite(String jsonContent) async {
+    final dbPath = await getDatabasesPath();
+    final targetFile = File(join(dbPath, 'wayze_map_backup.json'));
+    final backupFile = File(join(dbPath, 'wayze_map_backup.json.bak'));
+    final tempFile = File(join(dbPath, 'wayze_map_backup.json.tmp'));
+
+    // 1. Create .bak backup before modifying
+    if (await targetFile.exists()) {
+      await targetFile.copy(backupFile.path);
+    } else {
+      final currentBackupJson = await exportToJson();
+      await backupFile.writeAsString(currentBackupJson, flush: true);
+    }
+
+    // 2. Atomic write to .tmp first
+    await tempFile.writeAsString(jsonContent, flush: true);
+
+    // 3. Rename .tmp to destination file
+    if (await targetFile.exists()) {
+      await targetFile.delete();
+    }
+    await tempFile.rename(targetFile.path);
+
+    // 4. Update SQLite transaction
+    await importFromJson(jsonContent);
+  }
+
+  /// Restores from .bak if target corrupted or validation fails
+  Future<bool> restoreFromBackup() async {
+    final dbPath = await getDatabasesPath();
+    final backupFile = File(join(dbPath, 'wayze_map_backup.json.bak'));
+    if (!await backupFile.exists()) return false;
+
+    final content = await backupFile.readAsString();
+    await importFromJson(content);
+    return true;
   }
 
   Future<void> close() async {
