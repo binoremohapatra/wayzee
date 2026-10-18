@@ -45,6 +45,14 @@ class SafeModeManager {
     return false;
   }
 
+  /// Debug trigger: forces consecutive crash evaluations to enter Safe Mode
+  Future<void> forceSimulateCrashLoop({int crashCount = 3, DateTime? now}) async {
+    final baseTime = now ?? DateTime.now();
+    for (int i = 0; i < crashCount; i++) {
+      await evaluateStartupSafety(now: baseTime.add(Duration(seconds: i)));
+    }
+  }
+
   /// Called after 60 seconds of stable operation to clear crash history
   Future<void> markSessionStable() async {
     await prefs.remove(keyCrashTimestamps);

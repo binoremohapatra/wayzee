@@ -10,6 +10,7 @@ import 'package:wayze/domain/fusion/sensor_source.dart';
 import 'package:wayze/domain/models/alert_item.dart';
 import 'package:wayze/domain/safety/fallback_coordinator.dart';
 import 'package:wayze/domain/safety/safe_mode_manager.dart';
+import 'package:wayze/domain/safety/camera_health_monitor.dart';
 import 'package:wayze/domain/state/app_state_machine.dart';
 import 'package:wayze/domain/vision/vision_tracker.dart';
 
@@ -49,6 +50,9 @@ class MockVisionBridge implements VisionBridge {
 
   @override
   Stream<List<VisionDetection>> get visionStream => const Stream.empty();
+
+  @override
+  Stream<CameraFrameHealth> get cameraHealthStream => const Stream.empty();
 }
 
 void main() {

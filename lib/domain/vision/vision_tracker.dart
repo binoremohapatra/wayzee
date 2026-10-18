@@ -78,6 +78,19 @@ class VisionTracker {
   final double iouMatchThreshold;
   final int minConfirmingFrames;
   final double alphaSmoothing; // EMA filter factor
+  final Map<String, double> perClassConfidenceThresholds;
+
+  static const Map<String, double> defaultPerClassThresholds = {
+    'stairs_down': 0.70, // Strictest threshold for drop-off / down stairs
+    'stairs_up': 0.65,
+    'stairs': 0.70,
+    'drop_off': 0.70,
+    'person': 0.50,
+    'door': 0.50,
+    'chair': 0.45,
+    'table': 0.45,
+    'obstacle': 0.45,
+  };
 
   int _nextTrackId = 1;
   final List<TrackedObstacle> _activeTracks = [];
@@ -86,7 +99,9 @@ class VisionTracker {
     this.iouMatchThreshold = 0.35,
     this.minConfirmingFrames = 3,
     this.alphaSmoothing = 0.30,
-  });
+    Map<String, double>? perClassConfidenceThresholds,
+  }) : perClassConfidenceThresholds =
+            perClassConfidenceThresholds ?? defaultPerClassThresholds;
 
   List<TrackedObstacle> get activeTracks => List.unmodifiable(_activeTracks);
 
@@ -99,6 +114,11 @@ class VisionTracker {
     final matchedTrackIds = <int>{};
 
     for (final detection in detections) {
+      // Per-class confidence check: reject detections failing per-class bar
+      final minConfidence = perClassConfidenceThresholds[detection.label] ?? 0.45;
+      if (detection.confidence < minConfidence) {
+        continue;
+      }
       TrackedObstacle? bestMatch;
       double bestSimilarity = -1.0;
 
@@ -172,9 +192,17 @@ class VisionTracker {
 
   AlertItem? _createAlertFromTrack(TrackedObstacle track, int nowMs) {
     final score = track.threatScore;
+    final isStairsOrDropOff = track.label == 'stairs_down' ||
+        track.label == 'stairs_up' ||
+        track.label == 'stairs' ||
+        track.label == 'drop_off';
 
     AlertPriority priority;
-    if (track.label == 'stairs_down' || track.label == 'drop_off' || score >= 9.0) {
+    // Camera-only stairs detection emits a hedged P1 alert.
+    // It is upgraded to P0 in FusionEngine if confirmed by IMU change or cane sensor down-range spike.
+    if (isStairsOrDropOff) {
+      priority = AlertPriority.p1Navigation;
+    } else if (score >= 9.0) {
       priority = AlertPriority.p0Danger;
     } else if (score >= 5.0) {
       priority = AlertPriority.p1Navigation;
@@ -196,10 +224,14 @@ class VisionTracker {
 
   String _formatSpeech(TrackedObstacle track, AlertPriority priority) {
     final zonePhrase = track.zone.spokenLabel;
-    if (track.label == 'stairs_down' || track.label == 'drop_off') {
-      return 'Danger! Stairs down ahead. Stop!';
-    } else if (track.label == 'stairs_up') {
-      return 'Stairs up $zonePhrase.';
+    final isStairsOrDropOff = track.label == 'stairs_down' ||
+        track.label == 'stairs_up' ||
+        track.label == 'stairs' ||
+        track.label == 'drop_off';
+
+    if (isStairsOrDropOff) {
+      // Hedged P1 announcement for camera-only detection
+      return 'Maybe stairs ahead, slow down.';
     } else if (priority == AlertPriority.p0Danger) {
       return 'Hazard! ${track.label} $zonePhrase. Stop.';
     } else {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import '../../domain/models/spatial_zone.dart';
+import '../../domain/safety/camera_health_monitor.dart';
 
 class VisionDetection {
   final String label;
@@ -60,6 +61,7 @@ abstract class VisionBridge {
   Future<int> getThermalStatus();
   Stream<List<VisionDetection>> get visionStream;
   Stream<String> get hardwareKeyStream;
+  Stream<CameraFrameHealth> get cameraHealthStream => const Stream.empty();
 }
 
 class NativeVisionBridge implements VisionBridge {
@@ -67,8 +69,14 @@ class NativeVisionBridge implements VisionBridge {
   static const EventChannel _visionChannel = EventChannel('com.wayze/vision_stream');
   static const EventChannel _hardwareKeyChannel = EventChannel('com.wayze/hardware_keys');
 
+  final StreamController<CameraFrameHealth> _cameraHealthController =
+      StreamController<CameraFrameHealth>.broadcast();
+
   Stream<List<VisionDetection>>? _visionStream;
   Stream<String>? _hardwareKeyStream;
+
+  @override
+  Stream<CameraFrameHealth> get cameraHealthStream => _cameraHealthController.stream;
 
   @override
   Future<bool> startForegroundService() async {
@@ -132,7 +140,25 @@ class NativeVisionBridge implements VisionBridge {
     _visionStream ??= _visionChannel
         .receiveBroadcastStream()
         .map<List<VisionDetection>>((dynamic event) {
-      if (event is List) {
+      if (event is Map) {
+        final detectionsList = event['detections'] as List? ?? [];
+        if (event.containsKey('quality')) {
+          final q = event['quality'] as Map? ?? {};
+          _cameraHealthController.add(CameraFrameHealth(
+            meanLuminance: (q['meanLuminance'] as num?)?.toDouble() ?? 0.0,
+            varianceLuminance: (q['varianceLuminance'] as num?)?.toDouble() ?? 0.0,
+            isDark: q['isDark'] as bool? ?? false,
+            isBlocked: q['isBlocked'] as bool? ?? false,
+            timestamp: DateTime.fromMillisecondsSinceEpoch(
+              (q['timestamp'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
+            ),
+          ));
+        }
+        return detectionsList
+            .whereType<Map<dynamic, dynamic>>()
+            .map((e) => VisionDetection.fromMap(e))
+            .toList();
+      } else if (event is List) {
         return event
             .whereType<Map<dynamic, dynamic>>()
             .map((e) => VisionDetection.fromMap(e))

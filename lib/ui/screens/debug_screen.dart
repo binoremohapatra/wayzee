@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/accessible_colors.dart';
 import '../../data/sensors/mock_cane_source.dart';
+import '../../data/tts_stt/tts_service.dart';
+import '../../domain/safety/safe_mode_manager.dart';
+import '../../domain/state/app_state_machine.dart';
 import '../../domain/vision/vision_metrics.dart';
 import '../widgets/accessible_scaffold.dart';
 import '../widgets/accessible_tactile_button.dart';
@@ -120,6 +124,48 @@ class _DebugScreenState extends State<DebugScreen> {
             AccessibleTactileButton(
               label: 'Stationary (Stop Movement)',
               onPressed: () => _applyScenario(CaneScenario.stationary),
+            ),
+            const SizedBox(height: 24.0),
+
+            // Safe Mode Triggers
+            const Text(
+              'RELIABILITY & SAFE MODE TESTING',
+              style: TextStyle(color: AccessibleColors.textSecondary, fontSize: 14.0, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8.0),
+            AccessibleTactileButton(
+              label: 'Force Crash x3 (Trigger Safe Mode)',
+              isDestructive: true,
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                final safeModeManager = SafeModeManager(
+                  prefs: prefs,
+                  stateMachine: AppStateMachine(ttsService: FlutterTtsService()),
+                );
+                await safeModeManager.forceSimulateCrashLoop(crashCount: 3);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Safe Mode triggered (3 crashes in 5 min)!')),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 12.0),
+            AccessibleTactileButton(
+              label: 'Reset Safe Mode',
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                final safeModeManager = SafeModeManager(
+                  prefs: prefs,
+                  stateMachine: AppStateMachine(ttsService: FlutterTtsService()),
+                );
+                await safeModeManager.resetSafeMode();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Safe Mode reset to normal operation.')),
+                  );
+                }
+              },
             ),
             const SizedBox(height: 24.0),
 

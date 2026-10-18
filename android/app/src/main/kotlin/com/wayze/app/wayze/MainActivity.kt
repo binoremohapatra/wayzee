@@ -107,7 +107,7 @@ class MainActivity : FlutterActivity() {
             context = this,
             lifecycleOwner = this,
             inference = yoloInference!!
-        ) { detections, latencyMs ->
+        ) { detections, latencyMs, frameQuality ->
             runOnUiThread {
                 val mappedList = detections.map { d ->
                     mapOf(
@@ -124,7 +124,17 @@ class MainActivity : FlutterActivity() {
                         "y2" to d.y2.toDouble()
                     )
                 }
-                visionEventSink?.success(mappedList)
+                val payload = mapOf(
+                    "detections" to mappedList,
+                    "quality" to mapOf(
+                        "meanLuminance" to frameQuality.meanLuminance.toDouble(),
+                        "varianceLuminance" to frameQuality.varianceLuminance.toDouble(),
+                        "isDark" to frameQuality.isDark,
+                        "isBlocked" to frameQuality.isBlocked,
+                        "timestamp" to System.currentTimeMillis()
+                    )
+                )
+                visionEventSink?.success(payload)
             }
         }
         cameraXManager?.startCamera()

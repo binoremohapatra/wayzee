@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/alerts/alert_queue.dart';
 import '../domain/models/alert_item.dart';
+import '../domain/safety/camera_health_monitor.dart';
 import '../domain/state/app_state_machine.dart';
 import '../domain/vision/vision_tracker.dart';
 import '../domain/vision/vision_metrics.dart';
@@ -89,16 +90,25 @@ final alertQueueProvider = Provider<AlertQueue>((ref) {
   );
 });
 
+/// Provider for CameraHealthMonitor
+final cameraHealthMonitorProvider = Provider<CameraHealthMonitor>((ref) {
+  final queue = ref.watch(alertQueueProvider);
+  return CameraHealthMonitor(alertQueue: queue);
+});
+
 /// Provider for FusionEngine
 final fusionEngineProvider = Provider<FusionEngine>((ref) {
   final queue = ref.watch(alertQueueProvider);
   final tracker = ref.watch(visionTrackerProvider);
   final haptics = ref.watch(hapticServiceProvider);
+  final healthMonitor = ref.watch(cameraHealthMonitorProvider);
+  final bridge = ref.watch(visionBridgeProvider);
 
   final engine = FusionEngine(
     alertQueue: queue,
     visionTracker: tracker,
     hapticService: haptics,
+    cameraHealthMonitor: healthMonitor,
   );
 
   // Attach default phone sensor source
@@ -106,7 +116,13 @@ final fusionEngineProvider = Provider<FusionEngine>((ref) {
   engine.attachSensorSource(phoneSensors);
   phoneSensors.start();
 
-  ref.onDispose(() => engine.dispose());
+  // Listen to camera frame health stream
+  final healthSub = bridge.cameraHealthStream.listen(engine.ingestCameraHealth);
+
+  ref.onDispose(() {
+    healthSub.cancel();
+    engine.dispose();
+  });
   return engine;
 });
 

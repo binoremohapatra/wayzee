@@ -14,11 +14,18 @@ import java.util.concurrent.Executors
 import kotlin.math.max
 import kotlin.math.min
 
+data class FrameQuality(
+    val meanLuminance: Float,
+    val varianceLuminance: Float,
+    val isDark: Boolean,
+    val isBlocked: Boolean
+)
+
 class CameraXManager(
     private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
     private val inference: YoloV8Inference,
-    private val onDetectionsReady: (List<DetectionResult>, Long) -> Unit
+    private val onDetectionsReady: (List<DetectionResult>, Long, FrameQuality) -> Unit
 ) {
     private val backgroundExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private var imageAnalysis: ImageAnalysis? = null
@@ -85,13 +92,13 @@ class CameraXManager(
             val startTime = System.currentTimeMillis()
 
             // Preprocess YUV to RGB Letterbox into preallocated inputBuffer
-            preprocessYuvToLetterbox(imageProxy, inputBuffer)
+            val frameQuality = preprocessYuvToLetterbox(imageProxy, inputBuffer)
 
             // Execute INT8 inference
             val results = inference.processFrame(inputBuffer)
             val elapsedMs = System.currentTimeMillis() - startTime
 
-            onDetectionsReady(results, elapsedMs)
+            onDetectionsReady(results, elapsedMs, frameQuality)
         } catch (_: Exception) {
         } finally {
             // Frame is strictly processed in RAM and closed immediately. Never stored.
@@ -101,9 +108,9 @@ class CameraXManager(
 
     /**
      * Converts YUV_420_888 planes into normalized 320x320 RGB letterbox bytes.
-     * Operates purely in RAM.
+     * Computes luminance mean and variance heuristics purely in RAM without storing frames.
      */
-    private fun preprocessYuvToLetterbox(imageProxy: ImageProxy, output: ByteBuffer) {
+    private fun preprocessYuvToLetterbox(imageProxy: ImageProxy, output: ByteBuffer): FrameQuality {
         output.rewind()
 
         val planes = imageProxy.planes
@@ -121,6 +128,10 @@ class CameraXManager(
         val scaleX = srcWidth.toFloat() / targetSize.toFloat()
         val scaleY = srcHeight.toFloat() / targetSize.toFloat()
 
+        var sumY: Long = 0L
+        var sumYsq: Long = 0L
+        val totalPixels = targetSize * targetSize
+
         for (targetY in 0 until targetSize) {
             val srcY = min(srcHeight - 1, (targetY * scaleY).toInt())
             val uvRow = srcY shr 1
@@ -136,6 +147,9 @@ class CameraXManager(
                 val uVal = (uPlane.get(uvIndex).toInt() and 0xFF) - 128
                 val vVal = (vPlane.get(uvIndex).toInt() and 0xFF) - 128
 
+                sumY += yVal
+                sumYsq += (yVal.toLong() * yVal.toLong())
+
                 // ITU-R BT.601 conversion
                 val r = min(255, max(0, (yVal + 1.402f * vVal).toInt()))
                 val g = min(255, max(0, (yVal - 0.344136f * uVal - 0.714136f * vVal).toInt()))
@@ -147,6 +161,18 @@ class CameraXManager(
                 output.put((b - 128).toByte())
             }
         }
+
+        val meanY = sumY.toFloat() / totalPixels.toFloat()
+        val varianceY = (sumYsq.toFloat() / totalPixels.toFloat()) - (meanY * meanY)
+        val isDark = meanY < 20.0f
+        val isBlocked = varianceY < 5.0f && meanY < 45.0f
+
+        return FrameQuality(
+            meanLuminance = meanY,
+            varianceLuminance = varianceY,
+            isDark = isDark,
+            isBlocked = isBlocked
+        )
     }
 
     fun stopCamera() {

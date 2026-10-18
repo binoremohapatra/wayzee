@@ -19,6 +19,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _hapticsEnabled = true;
   bool _fallDetectionEnabled = true;
   bool _soundEffectsEnabled = true;
+  bool _heartbeatEnabled = true;
+  int _heartbeatIntervalSec = 25;
 
   @override
   void initState() {
@@ -33,6 +35,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _hapticsEnabled = prefs.getBool('haptics_enabled') ?? true;
       _fallDetectionEnabled = prefs.getBool('fall_detection_enabled') ?? true;
       _soundEffectsEnabled = prefs.getBool('sound_effects_enabled') ?? true;
+      _heartbeatEnabled = prefs.getBool('heartbeat_enabled') ?? true;
+      _heartbeatIntervalSec = prefs.getInt('heartbeat_interval_sec') ?? 25;
     });
     // Update TTS rate immediately when loading
     final flutterTts = FlutterTts();
@@ -45,6 +49,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool('haptics_enabled', _hapticsEnabled);
     await prefs.setBool('fall_detection_enabled', _fallDetectionEnabled);
     await prefs.setBool('sound_effects_enabled', _soundEffectsEnabled);
+    await prefs.setBool('heartbeat_enabled', _heartbeatEnabled);
+    await prefs.setInt('heartbeat_interval_sec', _heartbeatIntervalSec);
   }
 
   @override
@@ -133,6 +139,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
           description: 'Earcon sounds for events',
         ),
+        const SizedBox(height: 16),
+        SwitchRow(
+          label: 'Haptic Heartbeat',
+          value: _heartbeatEnabled,
+          onChanged: (value) {
+            setState(() {
+              _heartbeatEnabled = value;
+            });
+            _saveSettings();
+            if (value) {
+              Fx.haptic(Sig.on);
+              Fx.speak?.call('Heartbeat vibration enabled');
+            } else {
+              Fx.haptic(Sig.off);
+              Fx.speak?.call('Heartbeat vibration disabled');
+            }
+          },
+          description: 'Periodic pulse so you know the app is running',
+        ),
+        if (_heartbeatEnabled) ...[
+          const SizedBox(height: 16),
+          StepperRow(
+            label: 'Heartbeat Interval',
+            valueText: '${_heartbeatIntervalSec}s',
+            onMinus: () {
+              setState(() {
+                _heartbeatIntervalSec = (_heartbeatIntervalSec - 5).clamp(10, 60);
+              });
+              _saveSettings();
+              Fx.speak?.call('Heartbeat interval $_heartbeatIntervalSec seconds');
+            },
+            onPlus: () {
+              setState(() {
+                _heartbeatIntervalSec = (_heartbeatIntervalSec + 5).clamp(10, 60);
+              });
+              _saveSettings();
+              Fx.speak?.call('Heartbeat interval $_heartbeatIntervalSec seconds');
+            },
+            description: 'Time between status pulses',
+          ),
+        ],
         const SizedBox(height: 16),
         BigButton(
           label: 'Learn the Signals',
