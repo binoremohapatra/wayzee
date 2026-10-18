@@ -28,6 +28,11 @@ class HomeScreen extends StatelessWidget {
             Navigator.pushNamed(context, '/camera');
           }),
           const SizedBox(height: 16),
+          BigButton(label: 'YOLO Model Benchmark & Test', icon: Icons.speed_rounded, onPressed: () {
+            Fx.haptic(Sig.primary);
+            Navigator.pushNamed(context, '/model_test');
+          }),
+          const SizedBox(height: 16),
           BigButton(label: 'Indoor Map Setup', icon: Icons.map_rounded, onPressed: () {
             Fx.haptic(Sig.primary);
             Navigator.pushNamed(context, '/map_setup');

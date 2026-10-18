@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:ui';
 import 'dart:math';
@@ -23,21 +24,25 @@ class CompositeDetector extends Detector {
     bool customExists = false;
     List<String> messages = [];
 
-    // Check custom TFLite model
+    // Check custom TFLite model from APK assets via rootBundle
     try {
-      final customFile = File('assets/models/wayze.tflite');
-      if (await customFile.exists()) {
-        final bytes = await customFile.length();
-        if (bytes > 1000) {
-          customExists = true;
-        } else {
-          messages.add('Custom TFLite model file is empty (0 bytes)');
-        }
+      final byteData = await rootBundle.load('assets/models/wayze.tflite');
+      if (byteData.lengthInBytes > 1000) {
+        customExists = true;
       } else {
-        messages.add('Custom TFLite model file not found');
+        messages.add('Custom TFLite model file is too small');
       }
     } catch (e) {
-      messages.add('Custom TFLite model check failed: $e');
+      try {
+        final customFile = File('assets/models/wayze.tflite');
+        if (await customFile.exists()) {
+          customExists = true;
+        } else {
+          messages.add('Custom TFLite model not found in bundle or file: $e');
+        }
+      } catch (_) {
+        messages.add('Custom TFLite model check failed: $e');
+      }
     }
 
     // Build status message
@@ -68,11 +73,18 @@ class CompositeDetector extends Detector {
     }
 
     try {
-      _interpreter = await tfl.Interpreter.fromAsset('assets/models/wayze.tflite');
-      debugPrint('CompositeDetector: TFLite model loaded successfully');
+      final byteData = await rootBundle.load('assets/models/wayze.tflite');
+      final buffer = byteData.buffer.asUint8List();
+      _interpreter = tfl.Interpreter.fromBuffer(buffer);
+      debugPrint('CompositeDetector: TFLite model loaded successfully from buffer');
     } catch (e) {
-      debugPrint('CompositeDetector: Failed to load TFLite model: $e');
-      debugPrint('CompositeDetector: Using mock detection for testing');
+      try {
+        _interpreter = await tfl.Interpreter.fromAsset('assets/models/wayze.tflite');
+        debugPrint('CompositeDetector: TFLite model loaded successfully from asset');
+      } catch (e2) {
+        debugPrint('CompositeDetector: Failed to load TFLite model: $e2');
+        debugPrint('CompositeDetector: Using mock detection for testing');
+      }
     }
   }
 
