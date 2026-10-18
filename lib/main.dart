@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:android_intent_plus/android_intent_plus.dart';  // Import path issue
@@ -136,11 +137,12 @@ class WayzeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Wayze',
-      debugShowCheckedModeBanner: false,
-      theme: appTheme,
-      initialRoute: '/',
+    return ProviderScope(
+      child: MaterialApp(
+        title: 'Wayze',
+        debugShowCheckedModeBanner: false,
+        theme: appTheme,
+        initialRoute: '/',
       routes: {
         '/': (context) => const WelcomeLanguageScreen(),
         '/home': (context) => const HomeScreen(),
@@ -154,6 +156,7 @@ class WayzeApp extends StatelessWidget {
         '/demo': (context) => const DemoSimulationScreen(),
         '/about_model': (context) => const AboutModelInfoScreen(),
       },
+      ),
     );
   }
 }
