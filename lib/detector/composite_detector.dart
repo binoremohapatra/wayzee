@@ -108,26 +108,47 @@ class CompositeDetector extends Detector {
       // Resize to 320x320
       final resized = img.copyResize(imageDecoded, width: 320, height: 320);
       
-      // Convert to Float32List in NCHW format [1, 3, 320, 320]
-      final input = Float32List(1 * 3 * 320 * 320);
-      for (int y = 0; y < 320; y++) {
-        for (int x = 0; x < 320; x++) {
-          final pixel = resized.getPixel(x, y);
-          // NCHW format: [batch, channel, height, width]
-          // Normalize to 0-1
-          input[0 * 3 * 320 * 320 + 0 * 320 * 320 + y * 320 + x] = pixel.r / 255.0; // R
-          input[0 * 3 * 320 * 320 + 1 * 320 * 320 + y * 320 + x] = pixel.g / 255.0; // G
-          input[0 * 3 * 320 * 320 + 2 * 320 * 320 + y * 320 + x] = pixel.b / 255.0; // B
+      final inTensor = _interpreter!.getInputTensor(0);
+      final inShape = inTensor.shape; // e.g. [1, 320, 320, 3] or [1, 3, 320, 320]
+      final outTensor = _interpreter!.getOutputTensor(0);
+      final outShape = outTensor.shape; // e.g. [1, 6, 2100]
+
+      // Check whether model expects NCHW [1, 3, H, W] or NHWC [1, H, W, 3]
+      final bool isNCHW = inShape.length == 4 && inShape[1] == 3;
+      final int batch = inShape.isNotEmpty ? inShape[0] : 1;
+      final int height = inShape.length >= 4 ? (isNCHW ? inShape[2] : inShape[1]) : 320;
+      final int width = inShape.length >= 4 ? (isNCHW ? inShape[3] : inShape[2]) : 320;
+      final int channels = inShape.length >= 4 ? (isNCHW ? inShape[1] : inShape[3]) : 3;
+
+      final input = Float32List(batch * height * width * channels);
+      int idx = 0;
+      if (isNCHW) {
+        for (int c = 0; c < 3; c++) {
+          for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+              final pixel = resized.getPixel(x, y);
+              input[idx++] = (c == 0 ? pixel.r : (c == 1 ? pixel.g : pixel.b)) / 255.0;
+            }
+          }
+        }
+      } else {
+        for (int y = 0; y < height; y++) {
+          for (int x = 0; x < width; x++) {
+            final pixel = resized.getPixel(x, y);
+            input[idx++] = pixel.r / 255.0;
+            input[idx++] = pixel.g / 255.0;
+            input[idx++] = pixel.b / 255.0;
+          }
         }
       }
-      
-      // Prepare output buffer: [1, 6, 2100]
-      final output = Float32List(1 * 6 * 2100);
-      
-      // Run inference (pass as 2D lists for reshape)
-      final input2D = [input];
-      final output2D = [output];
-      _interpreter!.run(input2D, output2D);
+
+      final int outTotalElements = outShape.fold(1, (prev, elem) => prev * elem);
+      final output = Float32List(outTotalElements);
+
+      // Reshape with explicit tensor dimensions so TFLite kernel doesn't fail dims check
+      final reshapedInput = input.reshape(inShape);
+      final reshapedOutput = output.reshape(outShape);
+      _interpreter!.run(reshapedInput, reshapedOutput);
       
       // Decode output: [1, 6, 2100] -> boxes and scores
       List<Detection> detections = [];
